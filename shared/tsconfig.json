@@ -5,11 +5,12 @@
     "lib": ["ES2020"],
     "strict": true,
     "esModuleInterop": true,
+    "rootDir": "src",
     "outDir": "dist",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true
   },
-  "include": ["src", "test.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

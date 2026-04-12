@@ -1,5 +1,5 @@
-// Test that shared exports work
-import * as shared from './src/index';
+// Compiled smoke test: npm test runs node dist/packageExportSmoke.js
+import * as shared from './index';
 
 console.log('✓ Shared exports:', Object.keys(shared));
 if (Object.keys(shared).length === 0) {
