@@ -1,2 +1,2 @@
 [deploy]
-buildOutputDirs = ["dist"]
+buildOutputDirs = ["dist", "../shared/dist"]
