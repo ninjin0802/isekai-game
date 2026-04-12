@@ -1,6 +1,6 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "deploy": {
-    "startCommand": "npm run build --workspace=@isekai/shared && npm run build --workspace=@isekai/server && node server/dist/index.js"
+    "startCommand": "node server/dist/index.js"
   }
 }
