@@ -1,4 +1,4 @@
-// Test that server can import shared
+// Test that server can import shared (compiled for CI smoke; not imported by app)
 import * as shared from '@isekai/shared';
 
 console.log('✓ Server can import shared');

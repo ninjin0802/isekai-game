@@ -1,13 +1,13 @@
 {
   "name": "@isekai/server",
   "version": "1.0.0",
-  "main": "dist/src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "start": "node dist/src/index.js",
+    "start": "node dist/index.js",
     "migrate": "ts-node src/db/migrate.ts",
-    "test": "tsc && node dist/test.js && vitest run",
+    "test": "tsc && node dist/smokeSharedImport.js && vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
