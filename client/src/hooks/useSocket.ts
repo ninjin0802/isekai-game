@@ -19,7 +19,9 @@ export function useSocket() {
     if (!token || initialized.current) return;
     initialized.current = true;
 
-    socketInstance = io('http://localhost:3001', {
+    // VITE_SERVER_URL: 本番では同一オリジン（空文字）、開発では http://localhost:3001
+    const serverUrl = import.meta.env.VITE_SERVER_URL ?? '';
+    socketInstance = io(serverUrl, {
       auth: { token },
       reconnection: true,
       reconnectionAttempts: 5,

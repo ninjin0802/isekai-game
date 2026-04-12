@@ -1,5 +1,6 @@
 import express from 'express';
 import { createServer } from 'http';
+import path from 'path';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { env } from './config/env';
@@ -12,17 +13,18 @@ import type { ClientToServerEvents, ServerToClientEvents } from '@isekai/shared'
 const app = express();
 const httpServer = createServer(app);
 
+// 本番: クライアントと同一オリジンなので CORS 制限なし
+// 開発: 別オリジン (localhost:5173) を許可
+const corsOrigin = env.nodeEnv === 'production' ? false : env.clientUrl;
+
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
-  cors: {
-    origin: env.clientUrl,
-    credentials: true,
-  },
+  cors: corsOrigin ? { origin: corsOrigin, credentials: true } : undefined,
   pingInterval: 25_000,
   pingTimeout: 10_000,
 });
 
 // Middleware
-app.use(cors({ origin: env.clientUrl, credentials: true }));
+app.use(cors(corsOrigin ? { origin: corsOrigin, credentials: true } : {}));
 app.use(express.json());
 
 // Health check
@@ -63,6 +65,16 @@ io.on('connection', (socket) => {
     console.log(`Socket disconnected: ${socket.id} — ${reason}`);
   });
 });
+
+// 本番: ビルド済みクライアントをサーブ (SPA フォールバック付き)
+if (env.nodeEnv === 'production') {
+  // __dirname = server/dist → ../../client/dist = /app/client/dist
+  const clientDist = path.resolve(__dirname, '../../client/dist');
+  app.use(express.static(clientDist));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
 
 httpServer.listen(env.port, () => {
   console.log(`Server running on port ${env.port} (${env.nodeEnv})`);

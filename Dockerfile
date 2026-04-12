@@ -14,10 +14,13 @@ RUN npm ci
 # Copy source
 COPY shared/ ./shared/
 COPY server/ ./server/
+COPY client/ ./client/
 
-# Build shared first, then server
+# Build order: shared → server → client
 RUN npm run build --workspace=@isekai/shared
 RUN npm run build --workspace=@isekai/server
+# VITE_SERVER_URL='' → socket.io connects to same origin at runtime
+RUN VITE_SERVER_URL="" npm run build --workspace=@isekai/client
 
 # ── Production stage ──────────────────────────────────────────────────────────
 FROM node:20-alpine
@@ -35,6 +38,7 @@ RUN npm ci --omit=dev
 # Copy compiled output from builder
 COPY --from=builder /app/shared/dist ./shared/dist
 COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/client/dist ./client/dist
 
 EXPOSE 3001
 CMD ["node", "server/dist/index.js"]
