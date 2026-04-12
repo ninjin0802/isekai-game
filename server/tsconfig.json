@@ -13,6 +13,6 @@
       "@isekai/shared": ["../shared/dist/index.d.ts"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "test.ts"],
   "exclude": ["node_modules", "dist"]
 }

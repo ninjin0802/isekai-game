@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w shared && npm run build -w server && npm run build -w client",
-    "db:migrate": "npm run migrate -w server"
+    "db:migrate": "npm run migrate -w server",
+    "test": "npm run test --workspace=@isekai/shared && npm run test --workspace=@isekai/server"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
