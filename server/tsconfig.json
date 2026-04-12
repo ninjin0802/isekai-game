@@ -10,7 +10,7 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "paths": {
-      "@isekai/shared": ["../shared/dist/index.js"]
+      "@isekai/shared": ["../shared/dist/index.d.ts"]
     }
   },
   "include": ["src"],
