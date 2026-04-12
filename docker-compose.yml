@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: isekai
+      POSTGRES_PASSWORD: isekai_dev_pass
+      POSTGRES_DB: isekaigame
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/src/db/migrations:/docker-entrypoint-initdb.d
+
+volumes:
+  postgres_data:
