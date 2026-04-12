@@ -7,7 +7,7 @@
     "build": "tsc",
     "test": "tsc && node dist/test.js"
   },
-  "devDependencies": {
+  "dependencies": {
     "typescript": "^5.4.5"
   }
 }
