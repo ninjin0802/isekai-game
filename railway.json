@@ -1,10 +1,6 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile"
-  },
   "deploy": {
-    "startCommand": "node server/dist/index.js"
+    "startCommand": "npm run build --workspace=@isekai/shared && npm run build --workspace=@isekai/server && node server/dist/index.js"
   }
 }
