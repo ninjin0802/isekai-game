@@ -12,11 +12,13 @@ export function registerLobbyHandlers(io: AppServer, socket: AppSocket) {
 
   // Send current room list on join
   socket.on('lobby:join', () => {
+    console.log(`[lobby:join] user=${username} socket=${socket.id}`);
     socket.join('lobby');
     socket.emit('lobby:room_list', { rooms: lobby.listRooms() });
   });
 
   socket.on('lobby:create_room', () => {
+    console.log(`[lobby:create_room] user=${username} socket=${socket.id}`);
     try {
       // Leave any existing room first
       const existingRoomId = lobby.getPlayerRoom(userId);
