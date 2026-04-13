@@ -13,8 +13,9 @@ async function waitForDb(pool: Pool): Promise<void> {
       console.log('Database connection established.');
       return;
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
       if (attempt === MAX_RETRIES) {
-        throw new Error(`Database not ready after ${MAX_RETRIES} attempts: ${err}`);
+        throw new Error(`Database not ready after ${MAX_RETRIES} attempts: ${message}`);
       }
       console.log(`Database not ready (attempt ${attempt}/${MAX_RETRIES}), retrying in ${RETRY_INTERVAL_MS}ms...`);
       await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL_MS));
@@ -39,12 +40,12 @@ async function runMigrations(pool: Pool): Promise<void> {
   try {
     files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
   } catch (err) {
-    throw new Error(`Failed to read migrations directory "${migrationsDir}": ${err}`);
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to read migrations directory "${migrationsDir}": ${message}`);
   }
 
   if (files.length === 0) {
-    console.warn(`No SQL migration files found in ${migrationsDir}`);
-    return;
+    throw new Error(`No SQL migration files found in ${migrationsDir}`);
   }
 
   for (const file of files) {
@@ -61,8 +62,21 @@ async function runMigrations(pool: Pool): Promise<void> {
 
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
     console.log(`Running migration: ${file}`);
-    await pool.query(sql);
-    await pool.query('INSERT INTO schema_migrations (version) VALUES ($1)', [version]);
+
+    // Run migration SQL and record it atomically
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(sql);
+      await client.query('INSERT INTO schema_migrations (version) VALUES ($1)', [version]);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
     console.log(`Done: ${file}`);
   }
 
