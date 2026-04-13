@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { pool } from '../config/db';
+import { Pool } from 'pg';
+import { env } from '../config/env';
 
-async function migrate() {
+async function runMigrations(pool: Pool): Promise<void> {
   const migrationsDir = path.join(__dirname, 'migrations');
   const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
 
@@ -13,11 +14,18 @@ async function migrate() {
     console.log(`Done: ${file}`);
   }
 
-  await pool.end();
   console.log('All migrations complete.');
 }
 
-migrate().catch(err => {
-  console.error('Migration failed:', err);
-  process.exit(1);
-});
+// When run directly (standalone migration tool)
+if (require.main === module) {
+  const pool = new Pool({ connectionString: env.databaseUrl });
+  runMigrations(pool)
+    .then(() => pool.end())
+    .catch(err => {
+      console.error('Migration failed:', err);
+      process.exit(1);
+    });
+}
+
+export { runMigrations };

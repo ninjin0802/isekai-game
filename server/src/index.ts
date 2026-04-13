@@ -4,6 +4,8 @@ import path from 'path';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { env } from './config/env';
+import { pool } from './config/db';
+import { runMigrations } from './db/migrate';
 import { authRouter } from './auth/authRouter';
 import { verifyToken, getUserById } from './auth/authService';
 import { registerLobbyHandlers } from './socket/lobbyHandlers';
@@ -76,6 +78,14 @@ if (env.nodeEnv === 'production') {
   });
 }
 
-httpServer.listen(env.port, () => {
-  console.log(`Server running on port ${env.port} (${env.nodeEnv})`);
-});
+// Run migrations then start listening
+runMigrations(pool)
+  .then(() => {
+    httpServer.listen(env.port, () => {
+      console.log(`Server running on port ${env.port} (${env.nodeEnv})`);
+    });
+  })
+  .catch(err => {
+    console.error('Startup migration failed:', err);
+    process.exit(1);
+  });

@@ -44,5 +44,4 @@ COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/server/src/db/migrations ./server/dist/db/migrations
 
 EXPOSE 3001
-# Wait for DB, run migrations, then start server
-CMD ["sh", "-c", "for i in $(seq 1 10); do node server/dist/db/migrate.js && break || (echo \"DB not ready, retry $i/10...\"; sleep 3); done && node server/dist/index.js"]
+CMD ["node", "server/dist/index.js"]
