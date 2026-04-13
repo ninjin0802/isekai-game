@@ -1,9 +1,9 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { register, login } from './authService';
 
 export const authRouter = Router();
 
-authRouter.post('/register', async (req: Request, res: Response) => {
+authRouter.post('/register', async (req: Request, res: Response, next: NextFunction) => {
   const { username, email, password } = req.body as Record<string, unknown>;
 
   if (typeof username !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
@@ -23,12 +23,13 @@ authRouter.post('/register', async (req: Request, res: Response) => {
     const result = await register({ username, email, password });
     res.status(201).json(result);
   } catch (err) {
+    if ((err as { code?: string })?.code === '42P01') return next(err);
     const message = err instanceof Error ? err.message : '登録に失敗しました';
     res.status(409).json({ error: message });
   }
 });
 
-authRouter.post('/login', async (req: Request, res: Response) => {
+authRouter.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body as Record<string, unknown>;
 
   if (typeof email !== 'string' || typeof password !== 'string') {
@@ -40,6 +41,7 @@ authRouter.post('/login', async (req: Request, res: Response) => {
     const result = await login({ email, password });
     res.json(result);
   } catch (err) {
+    if ((err as { code?: string })?.code === '42P01') return next(err);
     const message = err instanceof Error ? err.message : 'ログインに失敗しました';
     res.status(401).json({ error: message });
   }

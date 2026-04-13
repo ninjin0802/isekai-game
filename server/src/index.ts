@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
 import path from 'path';
 import { Server } from 'socket.io';
@@ -77,6 +77,23 @@ if (env.nodeEnv === 'production') {
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 }
+
+// If a query hits a missing table (DB was wiped while app was running),
+// re-run migrations and restart so the next request succeeds.
+let migrationRecoveryInProgress = false;
+app.use((_err: unknown, _req: Request, res: Response, next: NextFunction) => {
+  const err = _err as { code?: string; message?: string };
+  if (err?.code === '42P01' && !migrationRecoveryInProgress) {
+    migrationRecoveryInProgress = true;
+    console.error('Schema missing mid-run — re-running migrations and restarting...');
+    runMigrations(pool)
+      .then(() => { process.exit(0); })
+      .catch(() => { process.exit(1); });
+    res.status(503).json({ error: 'DB schema recovery in progress, please retry in a few seconds' });
+    return;
+  }
+  next(_err);
+});
 
 // Run migrations then start listening
 runMigrations(pool)
