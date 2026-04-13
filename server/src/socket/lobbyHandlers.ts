@@ -17,7 +17,7 @@ export function registerLobbyHandlers(io: AppServer, socket: AppSocket) {
     socket.emit('lobby:room_list', { rooms: lobby.listRooms() });
   });
 
-  socket.on('lobby:create_room', () => {
+  socket.on('lobby:create_room', async () => {
     console.log(`[lobby:create_room] user=${username} socket=${socket.id}`);
     try {
       // Leave any existing room first
@@ -27,15 +27,17 @@ export function registerLobbyHandlers(io: AppServer, socket: AppSocket) {
       }
 
       const state = lobby.createRoom(userId, username);
-      socket.join(state.room.id);
+      await socket.join(state.room.id);
+      console.log(`[lobby:room_update] emitting to socket=${socket.id} room=${state.room.id}`);
       socket.emit('lobby:room_update', { room: state.room, players: state.players });
       broadcastRoomList(io);
     } catch (err) {
+      console.error(`[lobby:create_room] error: ${err instanceof Error ? err.message : err}`);
       socket.emit('lobby:error', { message: err instanceof Error ? err.message : 'ルーム作成に失敗しました' });
     }
   });
 
-  socket.on('lobby:join_room', ({ roomId }) => {
+  socket.on('lobby:join_room', async ({ roomId }) => {
     try {
       const existingRoomId = lobby.getPlayerRoom(userId);
       if (existingRoomId && existingRoomId !== roomId) {
@@ -43,7 +45,7 @@ export function registerLobbyHandlers(io: AppServer, socket: AppSocket) {
       }
 
       const state = lobby.joinRoom(roomId, userId, username);
-      socket.join(roomId);
+      await socket.join(roomId);
       io.to(roomId).emit('lobby:room_update', { room: state.room, players: state.players });
       broadcastRoomList(io);
     } catch (err) {
