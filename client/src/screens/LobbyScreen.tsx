@@ -15,7 +15,11 @@ export default function LobbyScreen() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.emit('lobby:join');
+    // Join lobby room and request room list. Also re-join after reconnect
+    // (socket.io reuses the same socket object, so React effect doesn't re-run).
+    const joinLobby = () => socket.emit('lobby:join');
+    joinLobby();
+    socket.on('connect', joinLobby);
 
     socket.on('lobby:room_list', ({ rooms }) => setRooms(rooms));
     socket.on('lobby:room_update', ({ room, players }: { room: LobbyRoom; players: LobbyPlayer[] }) => {
@@ -25,6 +29,7 @@ export default function LobbyScreen() {
     socket.on('game:start', () => navigate('/game'));
 
     return () => {
+      socket.off('connect', joinLobby);
       socket.off('lobby:room_list');
       socket.off('lobby:room_update');
       socket.off('lobby:error');
