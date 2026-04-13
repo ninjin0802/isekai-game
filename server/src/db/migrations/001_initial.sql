@@ -13,7 +13,9 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Game rooms
-CREATE TYPE game_status AS ENUM ('waiting', 'playing', 'finished');
+DO $$ BEGIN
+  CREATE TYPE game_status AS ENUM ('waiting', 'playing', 'finished');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TABLE IF NOT EXISTS game_rooms (
   id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -52,8 +54,13 @@ CREATE TABLE IF NOT EXISTS player_inventory (
 );
 
 -- Bets placed during battles
-CREATE TYPE bet_result AS ENUM ('won', 'lost', 'pending');
-CREATE TYPE bet_target AS ENUM ('player_wins', 'monster_wins');
+DO $$ BEGIN
+  CREATE TYPE bet_result AS ENUM ('won', 'lost', 'pending');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE bet_target AS ENUM ('player_wins', 'monster_wins');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TABLE IF NOT EXISTS bets (
   id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
