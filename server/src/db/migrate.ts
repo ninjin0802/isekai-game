@@ -56,8 +56,19 @@ async function runMigrations(pool: Pool): Promise<void> {
       [version]
     );
     if (rows.length > 0) {
-      console.log(`Skipping already-applied migration: ${file}`);
-      continue;
+      // Verify the migration actually took effect by checking a sentinel table.
+      // If the users table is missing despite the record existing, the previous
+      // run was non-atomic (pre-transaction fix) — delete the stale record and re-run.
+      const { rows: tableCheck } = await pool.query(`
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'users'
+      `);
+      if (tableCheck.length > 0) {
+        console.log(`Skipping already-applied migration: ${file}`);
+        continue;
+      }
+      console.log(`Migration ${file} recorded but schema missing — re-running...`);
+      await pool.query('DELETE FROM schema_migrations WHERE version = $1', [version]);
     }
 
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
