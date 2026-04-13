@@ -10,6 +10,10 @@ export function registerLobbyHandlers(io: AppServer, socket: AppSocket) {
   const userId: string = (socket.data as { userId: string; username: string }).userId;
   const username: string = (socket.data as { userId: string; username: string }).username;
 
+  // Track the room this specific socket joined, so disconnect only affects its own room.
+  // Multiple sockets for the same user (multiple tabs) must not interfere with each other.
+  let myRoomId: string | undefined;
+
   // Send current room list on join
   socket.on('lobby:join', () => {
     console.log(`[lobby:join] user=${username} socket=${socket.id}`);
@@ -20,13 +24,14 @@ export function registerLobbyHandlers(io: AppServer, socket: AppSocket) {
   socket.on('lobby:create_room', async () => {
     console.log(`[lobby:create_room] user=${username} socket=${socket.id}`);
     try {
-      // Leave any existing room first
-      const existingRoomId = lobby.getPlayerRoom(userId);
-      if (existingRoomId) {
-        leaveAndNotify(io, socket, userId, existingRoomId);
+      // Leave this socket's current room first (not other sockets' rooms)
+      if (myRoomId) {
+        leaveAndNotify(io, socket, userId, myRoomId);
+        myRoomId = undefined;
       }
 
       const state = lobby.createRoom(userId, username);
+      myRoomId = state.room.id;
       await socket.join(state.room.id);
       console.log(`[lobby:room_update] emitting to socket=${socket.id} room=${state.room.id}`);
       socket.emit('lobby:room_update', { room: state.room, players: state.players });
@@ -39,12 +44,13 @@ export function registerLobbyHandlers(io: AppServer, socket: AppSocket) {
 
   socket.on('lobby:join_room', async ({ roomId }) => {
     try {
-      const existingRoomId = lobby.getPlayerRoom(userId);
-      if (existingRoomId && existingRoomId !== roomId) {
-        leaveAndNotify(io, socket, userId, existingRoomId);
+      if (myRoomId && myRoomId !== roomId) {
+        leaveAndNotify(io, socket, userId, myRoomId);
+        myRoomId = undefined;
       }
 
       const state = lobby.joinRoom(roomId, userId, username);
+      myRoomId = roomId;
       await socket.join(roomId);
       io.to(roomId).emit('lobby:room_update', { room: state.room, players: state.players });
       broadcastRoomList(io);
@@ -55,6 +61,7 @@ export function registerLobbyHandlers(io: AppServer, socket: AppSocket) {
 
   socket.on('lobby:leave_room', ({ roomId }) => {
     leaveAndNotify(io, socket, userId, roomId);
+    if (myRoomId === roomId) myRoomId = undefined;
   });
 
   socket.on('lobby:ready', ({ roomId, ready }) => {
@@ -80,8 +87,11 @@ export function registerLobbyHandlers(io: AppServer, socket: AppSocket) {
   });
 
   socket.on('disconnect', () => {
-    const roomId = lobby.getPlayerRoom(userId);
-    if (roomId) leaveAndNotify(io, socket, userId, roomId);
+    console.log(`[lobby:disconnect] user=${username} socket=${socket.id} room=${myRoomId ?? 'none'}`);
+    if (myRoomId) {
+      leaveAndNotify(io, socket, userId, myRoomId);
+      myRoomId = undefined;
+    }
   });
 }
 
